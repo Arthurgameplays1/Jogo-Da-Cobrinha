@@ -12,8 +12,8 @@ let tailLength = 2;
 const snakeParts = [];
 const speed = 7; // Define a velocidade aqui
 let score = 0; // Inicialize a pontuação
+let gameOverSquare = { x: -1, y: -1 }; // Inicialize com valores que não são válidos
 let isGameRunning = true;
-let isGameOver = false;
 
 function clearScreen() {
   ctx.fillStyle = 'black';
@@ -29,13 +29,38 @@ function drawGame() {
     drawApple();
     drawScore();
     setTimeout(drawGame, 1000 / speed);
-  } else if (isGameOver) {
+  } else {
+    // Game Over
     ctx.fillStyle = 'orange'; // Cor laranja
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'white';
     ctx.font = '50px verdana';
     ctx.fillText('Game Over!', canvas.clientWidth / 6.5, canvas.clientHeight / 2);
   }
+}
+
+function isGameOver() {
+  let gameOver = false;
+
+  if (headX < 0 || headX >= tileCount || headY < 0 || headY >= tileCount) {
+    gameOver = true; // Game over se a cobra sair dos limites do campo
+  }
+
+  for (let i = 0; i < snakeParts.length; i++) {
+    let part = snakeParts[i];
+    if (part.x === headX && part.y === headY) {
+      gameOver = true; // Game over se a cobra colidir com ela mesma
+      gameOverSquare.x = headX; // Armazene as coordenadas do quadrado onde ocorreu a colisão
+      gameOverSquare.y = headY;
+      break;
+    }
+  }
+
+  if (gameOver) {
+    isGameRunning = false; // Pausa o jogo
+  }
+
+  return gameOver;
 }
 
 function checkCollision() {
@@ -45,26 +70,16 @@ function checkCollision() {
     tailLength++;
     score++;
   }
-
-  if (headX < 0 || headX >= tileCount || headY < 0 || headY >= tileCount) {
-    isGameRunning = false;
-    isGameOver = true;
-  }
-
-  for (let i = 0; i < snakeParts.length; i++) {
-    let part = snakeParts[i];
-    if (part.x === headX && part.y === headY) {
-      isGameRunning = false;
-      isGameOver = true;
-      break;
-    }
-  }
 }
 
 function drawSnake() {
   for (let i = 0; i < snakeParts.length; i++) {
     const part = snakeParts[i];
-    ctx.fillStyle = 'green';
+    if (gameOverSquare.x === part.x && gameOverSquare.y === part.y) {
+      ctx.fillStyle = 'orange'; // Defina a cor laranja para o quadrado da colisão
+    } else {
+      ctx.fillStyle = 'green'; // Use a cor verde para os outros quadrados da cobra
+    }
     ctx.fillRect(part.x * tileCount, part.y * tileCount, tileSize, tileSize);
   }
 }
@@ -118,7 +133,7 @@ function keyDown(event) {
         }
         break;
     }
-  } else if (isGameOver && event.keyCode === 13) {
+  } else if (!isGameRunning && event.keyCode === 13) {
     // Se o jogo estiver parado e a tecla Enter for pressionada, reinicie o jogo
     restartGame();
   }
@@ -126,7 +141,6 @@ function keyDown(event) {
 
 function restartGame() {
   isGameRunning = true;
-  isGameOver = false;
   headX = 10;
   headY = 10;
   xVelocity = 0;
@@ -136,6 +150,7 @@ function restartGame() {
   tailLength = 2;
   snakeParts.length = 0;
   score = 0;
+  gameOverSquare = { x: -1, y: -1 };
   clearScreen();
   drawGame();
 }
