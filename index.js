@@ -1,7 +1,7 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const tileCount = 20;
-const tileSize = canvas.width / tileCount;
+const tileSize = 18;
 let headX = 10;
 let headY = 10;
 let xVelocity = 0;
@@ -10,6 +10,8 @@ let appleX = 5;
 let appleY = 5;
 let tailLength = 2;
 const snakeParts = [];
+const speed = 7; // Define the speed here
+let score = 0; // Initialize the score
 
 function clearScreen() {
   ctx.fillStyle = 'black';
@@ -17,100 +19,100 @@ function clearScreen() {
 }
 
 function drawGame() {
-  clearScreen();
   changeSnakePosition();
-  checkCollision();
+  clearScreen();
   drawSnake();
+  checkCollision();
   drawApple();
-  setTimeout(drawGame, 100);
+  drawScore();
+  setTimeout(drawGame, 1000 / speed);
 }
 
 function checkCollision() {
-  if (headX === appleX && headY === appleY) {
-    // A cobra colidiu com a maçã
+  if (appleX === headX && appleY === headY) {
     appleX = Math.floor(Math.random() * tileCount);
     appleY = Math.floor(Math.random() * tileCount);
     tailLength++;
+    score++;
   }
-
-  // Verificar colisão com a parede
-  if (headX < 0 || headY < 0 || headX >= tileCount || headY >= tileCount) {
-    // A cobra colidiu com a parede, reiniciar o jogo
-    resetGame();
-  }
-
-  // Verificar colisão com o próprio corpo
-  for (let i = 0; i < snakeParts.length; i++) {
-    const part = snakeParts[i];
-    if (part.x === headX && part.y === headY) {
-      // A cobra colidiu consigo mesma, reiniciar o jogo
-      resetGame();
-    }
-  }
-}
-
-function resetGame() {
-  headX = 10;
-  headY = 10;
-  xVelocity = 0;
-  yVelocity = 0;
-  appleX = 5;
-  appleY = 5;
-  tailLength = 2;
-  snakeParts.length = 0; // Limpar partes da cobra
 }
 
 function drawSnake() {
   ctx.fillStyle = 'green';
   for (let i = 0; i < snakeParts.length; i++) {
     const part = snakeParts[i];
-    ctx.fillRect(part.x * tileSize, part.y * tileSize, tileSize, tileSize);
+    ctx.fillRect(part.x * tileCount, part.y * tileCount, tileSize, tileSize);
   }
-  snakeParts.push({ x: headX, y: headY });
-
+  snakeParts.push(new snakePart(headX, headY));
   while (snakeParts.length > tailLength) {
-    snakeParts.shift();
+    snakeParts.shift(); // Remove the tail if it's too long
   }
-
-  ctx.fillStyle = 'blue';
-  ctx.fillRect(headX * tileSize, headY * tileSize, tileSize, tileSize);
 }
 
 function drawApple() {
   ctx.fillStyle = 'red';
-  ctx.fillRect(appleX * tileSize, appleY * tileSize, tileSize, tileSize);
+  ctx.fillRect(appleX * tileCount, appleY * tileCount, tileSize, tileSize);
+}
+
+function changeSnakePosition() {
+  const newHeadX = headX + xVelocity;
+  const newHeadY = headY + yVelocity;
+
+  // Check for collision with walls (game over condition)
+  if (newHeadX < 0 || newHeadX >= tileCount || newHeadY < 0 || newHeadY >= tileCount) {
+    // Game over logic, you can add your own game over handling here.
+    // For now, we'll just reset the game by reloading the page.
+    location.reload();
+    return;
+  }
+
+  headX = newHeadX;
+  headY = newHeadY;
 }
 
 document.body.addEventListener('keydown', keyDown);
 
 function keyDown(event) {
   switch (event.keyCode) {
-    case 38: // Seta para cima
+    case 38: // Up arrow
       if (yVelocity !== 1) {
-        xVelocity = 0;
         yVelocity = -1;
-      }
-      break;
-    case 40: // Seta para baixo
-      if (yVelocity !== -1) {
         xVelocity = 0;
+      }
+      break;
+    case 40: // Down arrow
+      if (yVelocity !== -1) {
         yVelocity = 1;
+        xVelocity = 0;
       }
       break;
-    case 37: // Seta para a esquerda
+    case 37: // Left arrow
       if (xVelocity !== 1) {
-        xVelocity = -1;
         yVelocity = 0;
+        xVelocity = -1;
       }
       break;
-    case 39: // Seta para a direita
+    case 39: // Right arrow
       if (xVelocity !== -1) {
-        xVelocity = 1;
         yVelocity = 0;
+        xVelocity = 1;
       }
       break;
   }
 }
 
-resetGame(); // Iniciar o jogo
-drawGame(); // Começar o loop do jogo
+// Class for snake parts
+class snakePart {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+}
+
+function drawScore() {
+  ctx.fillStyle = 'white';
+  ctx.font = '10px Verdana';
+  ctx.fillText('Score: ' + score, canvas.clientWidth - 50, 10);
+}
+
+drawGame();
